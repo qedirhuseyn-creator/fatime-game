@@ -1,77 +1,74 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="az">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Fatimə – Rəqəmlər Oyunu</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Fatimə – Rəqəmlər</title>
 
   <style>
-    html, body {
+    body {
       margin: 0;
-      padding: 0;
-      height: 100%;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: radial-gradient(circle at top, #162b5a, #0b1630);
+      font-family: system-ui, sans-serif;
+      background: linear-gradient(180deg,#0f1e3d,#081225);
       color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
     }
 
     .app {
-      max-width: 480px;
-      margin: auto;
+      width: 90%;
+      max-width: 400px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 18px;
       padding: 20px;
-    }
-
-    .pill {
-      display: inline-block;
-      background: rgba(255,255,255,0.12);
-      padding: 8px 14px;
-      border-radius: 20px;
-      margin: 4px;
-      font-size: 14px;
-    }
-
-    .card {
-      background: rgba(0,0,0,0.2);
-      border-radius: 16px;
-      padding: 20px;
-      margin-top: 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,.4);
       text-align: center;
     }
 
-    .number {
-      font-size: 72px;
+    .top {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      margin-bottom: 20px;
+      opacity: .9;
+    }
+
+    #question {
+      font-size: 64px;
       margin: 20px 0;
       font-weight: bold;
     }
 
-    button {
+    .option {
       width: 100%;
-      padding: 14px;
-      margin-top: 10px;
+      padding: 16px;
+      margin: 10px 0;
       font-size: 20px;
-      border-radius: 14px;
+      border-radius: 12px;
       border: none;
-      background: rgba(255,255,255,0.18);
-      color: white;
+      background: rgba(255,255,255,.15);
+      color: #fff;
+      cursor: pointer;
+    }
+
+    .option:active {
+      background: rgba(255,255,255,.3);
     }
   </style>
 </head>
 
 <body>
   <div class="app">
-    <div class="pill">🎮 Rəqəmlər (demo)</div>
-    <div class="pill">Xal: <b id="score">0</b></div>
-
-    <div class="card">
-      <div id="question">Bu neçədir?</div>
-      <div id="value" class="number">—</div>
-
-      <button class="option">—</button>
-      <button class="option">—</button>
-      <button class="option">—</button>
-
-      <div id="hint" style="margin-top:10px;opacity:.8"></div>
+    <div class="top">
+      <div>🎮 Rəqəmlər (demo)</div>
+      <div>Xal: <b id="score">0</b></div>
     </div>
+
+    <div id="question">?</div>
+
+    <div id="options"></div>
   </div>
 
   <script src="js/game.js"></script>
