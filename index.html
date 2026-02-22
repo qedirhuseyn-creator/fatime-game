@@ -1,144 +1,76 @@
 <!doctype html>
 <html lang="az">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Fatimə — Rəqəmlər (Demo)</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fatimə – Rəqəmlər Oyunu</title>
+
   <style>
-    :root{
-      --bg1:#0b1630;
-      --bg2:#0a1022;
-      --card: rgba(255,255,255,.08);
-      --card2: rgba(255,255,255,.10);
-      --text: rgba(255,255,255,.92);
-      --muted: rgba(255,255,255,.70);
-      --line: rgba(255,255,255,.14);
-    }
-    html,body{height:100%; margin:0;}
-    body{
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: radial-gradient(1100px 700px at 30% 20%, #162b5a 0%, var(--bg1) 40%, var(--bg2) 100%);
-      color: var(--text);
-      display:flex;
-      align-items:center;
-      justify-content:center;
+      background: radial-gradient(circle at top, #162b5a, #0b1630);
+      color: #fff;
+    }
+
+    .app {
+      max-width: 480px;
+      margin: auto;
       padding: 20px;
-      box-sizing:border-box;
     }
-    .app{
-      width: min(520px, 100%);
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      backdrop-filter: blur(10px);
-      padding: 18px;
-      box-shadow: 0 12px 40px rgba(0,0,0,.35);
-    }
-    .top{
-      display:flex;
-      gap:10px;
-      justify-content:space-between;
-      align-items:center;
-      margin-bottom: 14px;
-      flex-wrap: wrap;
-    }
-    .pill{
-      background: var(--card2);
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      padding: 8px 12px;
+
+    .pill {
+      display: inline-block;
+      background: rgba(255,255,255,0.12);
+      padding: 8px 14px;
+      border-radius: 20px;
+      margin: 4px;
       font-size: 14px;
-      display:flex;
-      align-items:center;
-      gap:8px;
-      user-select:none;
     }
-    .btn{
-      cursor:pointer;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .title{
-      font-size: 18px;
-      font-weight: 700;
-      margin: 6px 0 2px;
-    }
-    .sub{
-      color: var(--muted);
-      font-size: 13px;
-      margin: 0 0 14px;
-      line-height: 1.35;
-    }
-    .card{
-      background: rgba(0,0,0,.12);
-      border: 1px solid var(--line);
+
+    .card {
+      background: rgba(0,0,0,0.2);
       border-radius: 16px;
-      padding: 16px;
+      padding: 20px;
+      margin-top: 20px;
+      text-align: center;
     }
-    .q{
-      font-size: 18px;
-      text-align:center;
-      margin: 0 0 10px;
-      color: var(--muted);
+
+    .number {
+      font-size: 72px;
+      margin: 20px 0;
+      font-weight: bold;
     }
-    .value{
-      font-size: 78px;
-      text-align:center;
-      margin: 6px 0 14px;
-      font-weight: 800;
-      letter-spacing: 1px;
-    }
-    .opts{
-      display:grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-    }
-    .opt{
-      background: rgba(255,255,255,.10);
-      border: 1px solid var(--line);
-      color: var(--text);
+
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 10px;
+      font-size: 20px;
       border-radius: 14px;
-      padding: 14px 10px;
-      font-size: 22px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: transform .06s ease;
+      border: none;
+      background: rgba(255,255,255,0.18);
+      color: white;
     }
-    .opt:active{ transform: scale(.98); }
-    .hint{
-      text-align:center;
-      margin-top: 12px;
-      color: var(--muted);
-      font-size: 13px;
-      min-height: 18px;
-    }
-    .ok{ color: #b8ffce; }
-    .bad{ color: #ffd0d0; }
   </style>
 </head>
 
 <body>
   <div class="app">
-    <div class="top">
-      <div class="pill">🎮 Bölmə: <b>Rəqəmlər (demo)</b></div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <div id="scorePill" class="pill">Xal: <b id="score">0</b></div>
-        <div id="soundBtn" class="pill btn">🔊 Səs: <b id="soundState">Aç</b></div>
-        <div id="restartBtn" class="pill btn">🔁 Yenidən</div>
-      </div>
-    </div>
-
-    <div class="title">Salam, Fatimə!</div>
-    <p class="sub">Bu demo versiyada 6 rəqəm var: 1,2,3,4,5,10. Düz cavab verəndə səs çıxacaq.</p>
+    <div class="pill">🎮 Rəqəmlər (demo)</div>
+    <div class="pill">Xal: <b id="score">0</b></div>
 
     <div class="card">
-      <p id="question" class="q">Yüklənir…</p>
-      <div id="value" class="value">—</div>
-      <div class="opts">
-        <button class="opt option">—</button>
-        <button class="opt option">—</button>
-        <button class="opt option">—</button>
-      </div>
-      <div id="hint" class="hint"></div>
+      <div id="question">Bu neçədir?</div>
+      <div id="value" class="number">—</div>
+
+      <button class="option">—</button>
+      <button class="option">—</button>
+      <button class="option">—</button>
+
+      <div id="hint" style="margin-top:10px;opacity:.8"></div>
     </div>
   </div>
 
