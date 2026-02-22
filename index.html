@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="az">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>Fatimə — Ürək Yağışı</title>
+  <style>
+    html, body { height:100%; margin:0; background:#0b0f1a; }
+    canvas { display:block; width:100vw; height:100vh; touch-action:none;
+      background: radial-gradient(circle at 50% 25%, #162044, #070a12); }
+    .hud{
+      position:fixed; left:0; right:0; top:0; z-index:10;
+      display:flex; flex-wrap:wrap; justify-content:center; gap:10px;
+      padding:10px 12px; color:#e8ecff; user-select:none;
+      font: 14px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Arial;
+    }
+    .pill{
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.12);
+      padding:8px 10px; border-radius:999px;
+      backdrop-filter: blur(8px);
+    }
+    .btn{ cursor:pointer; }
+    .hint{
+      position:fixed; left:0; right:0; bottom:10px; z-index:10;
+      text-align:center; color:rgba(232,236,255,.75);
+      font: 12px system-ui; user-select:none; padding:0 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="hud">
+    <div class="pill">Xal: <b id="score">0</b></div>
+    <div class="pill">Can: <b id="lives">5</b>/<b id="maxLives">7</b></div>
+    <div class="pill">Level: <b id="level">1</b></div>
+    <div class="pill btn" id="sound">🔇 Səs</div>
+    <div class="pill btn" id="restart">↻ Yenidən</div>
+  </div>
+  <div class="hint">Sürüşdür: Fatimə hərəkət etsin • 💗/+1 • ⭐/+3 • 💚 can+1 və “Молодец, Фатима!” • 💣 can-1</div>
+  <canvas id="c"></canvas>
+
+<script>
+(() => {
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+
+  const scoreEl = document.getElementById('score');
+  const livesEl = document.getElementById('lives');
+  const maxLivesEl = document.getElementById('maxLives');
+  const levelEl = document.getElementById('level');
+  const soundBtn = document.getElementById('sound');
+  const restartBtn = document.getElementById('restart');
+
+  // Resize
+  function resize(){
+    const w = window.innerWidth, h = window.innerHeight;
+    canvas.width = Math.floor(w * devicePixelRatio);
+    canvas.height = Math.floor(h * devicePixelRatio);
+    ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+  }
+  window.addEventListener('resize', resize, {passive:true});
+  resize();
+
+  // Helpers
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const rand=(a,b)=>a+Math.random()*(b-a);
+
+  // Game state
+  const MAX_LIVES = 7;
+  maxLivesEl.textContent = MAX_LIVES;
+
+  let score = 0;
+  let lives = 5;
+  let level = 1;
+  let gameOver = false;
+
+  const fatime = { x: innerWidth/2, y: 0, r: 26, targetX: innerWidth/2 };
+
+  let items = [];
+  let particles = [];
+
+  // Audio
+  let audioCtx = null;
+  let soundOn = false;
+  let musicTimer = null;
+
+  function ensureAudio(){
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  function beep(freq, dur=0.10, type='sine', gain=0.03){
+    if(!soundOn || !audioCtx || audioCtx.state !== 'running') return;
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = type;
+    o.frequency.value = freq;
+    g.gain.value = gain;
+    o.connect(g); g.connect(audioCtx.destination);
+
+    const t0 = audioCtx.currentTime;
+    g.gain.setValueAtTime(gain, t0);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.start(t0);
+    o.stop(t0 + dur);
+  }
+
+  function startMusic(){
+    ensureAudio();
+    audioCtx.resume().then(() => {
+      soundOn = true;
+      soundBtn.textContent = "🔊 Səs";
+      let step = 0;
+      const notes = [392, 440, 392, 523, 494, 440, 392, 330];
+      if (musicTimer) clearInterval(musicTimer);
+      musicTimer = setInterval(() => {
+        if(!soundOn || gameOver) return;
+        beep(notes[step % notes.length], 0.09, 'sine', 0.012);
+        step++;
+      }, 240);
+    }).catch(()=>{});
+  }
+  function stopMusic(){
+    soundOn = false;
+    soundBtn.textContent = "🔇 Səs";
+    if (musicTimer) { clearInterval(musicTimer); musicTimer = null; }
+  }
+
+  soundBtn.addEventListener('click', () => {
+    if(!soundOn) startMusic();
+    else stopMusic();
+  });
+
+  // Russian speech for green heart
+  function sayRus(){
+    // bəzi telefonlarda TTS olmayacaq — problem deyil, beep onsuz da var
+    try{
+      if(!('speechSynthesis' in window)) return;
+      const u = new SpeechSynthesisUtterance("Молодец, Фатима!");
+      u.lang = "ru-RU";
+      u.rate = 1.02;
+      u.pitch = 1.10;
+      window.speechSynthesis.cancel();
+      setTimeout(()=>window.speechSynthesis.speak(u), 0);
+    }catch(e){}
+  }
+
+  // Visual effects
+  function burst(x,y,color){
+    for(let i=0;i<12;i++){
+      particles.push({
+        x,y,
+        vx: rand(-160,160),
+        vy: rand(-260,-90),
+        g: rand(480,680),
+        t: 0,
+        life: rand(0.35,0.70),
+        color
+      });
+    }
+  }
+
+  function drawParticles(dt){
+    for(let i=particles.length-1;i>=0;i--){
+      const p=particles[i];
+      p.t += dt;
+      p.vy += p.g * dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+
+      const a = Math.max(0, 1 - p.t/p.life);
+      ctx.globalAlpha = a;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,2.2,0,Math.PI*2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+
+      if(p.t >= p.life) particles.splice(i,1);
+    }
+  }
+
+  // Draw heart shape
+  function drawHeart(x,y,r,color){
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.scale(r/18, r/18);
+    ctx.beginPath();
+    ctx.moveTo(0, 6);
+    ctx.bezierCurveTo(0, -2, -10, -2, -10, 6);
+    ctx.bezierCurveTo(-10, 14, 0, 16, 0, 22);
+    ctx.bezierCurveTo(0, 16, 10, 14, 10, 6);
+    ctx.bezierCurveTo(10, -2, 0, -2, 0, 6);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 12;
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawBomb(x,y,r){
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.shadowColor = "rgba(255,80,80,.7)";
+    ctx.shadowBlur = 14;
+    ctx.fillStyle = "rgba(30,30,35,.95)";
+    ctx.beginPath();
+    ctx.arc(0,0,r,0,Math.PI*2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // fuse
+    ctx.strokeStyle = "rgba(255,255,255,.7)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(r*0.2, -r*0.9);
+    ctx.quadraticCurveTo(r*0.8, -r*1.2, r*0.9, -r*0.55);
+    ctx.stroke();
+
+    // spark
+    ctx.fillStyle = "rgba(255,206,71,.95)";
+    ctx.beginPath();
+    ctx.arc(r*0.9, -r*0.55, 3.5, 0, Math.PI*2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  function drawFatime(){
+    fatime.y = innerHeight - 86;
+    fatime.x += (fatime.targetX - fatime.x) * 0.22;
+
+    const x = fatime.x, y = fatime.y;
+
+    ctx.save();
+    // dress
+    ctx.fillStyle = "rgba(255,105,180,.35)";
+    ctx.beginPath();
+    ctx.moveTo(x, y + 28);
+    ctx.lineTo(x - 28, y + 72);
+    ctx.lineTo(x + 28, y + 72);
+    ctx.closePath();
+    ctx.fill();
+
+    // head
+    ctx.fillStyle = "rgba(255,224,189,.95)";
+    ctx.shadowColor = "rgba(255,224,189,.7)";
+    ctx.shadowBlur = 12;
+    ctx.beginPath();
+    ctx.arc(x, y, fatime.r, 0, Math.PI*2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // hair
+    ctx.fillStyle = "rgba(40,25,15,.85)";
+    ctx.beginPath();
+    ctx.arc(x, y - 6, fatime.r + 2, Math.PI, 0);
+    ctx.fill();
+
+    // eyes
+    ctx.fillStyle = "rgba(0,0,0,.75)";
+    ctx.beginPath(); ctx.arc(x - 9, y - 2, 2.4, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + 9, y - 2, 2.4, 0, Math.PI*2); ctx.fill();
+
+    // smile
+    ctx.strokeStyle = "rgba(0,0,0,.55)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(x, y + 6, 8, 0.15*Math.PI, 0.85*Math.PI);
+    ctx.stroke();
+
+    // name
+    ctx.fillStyle = "rgba(255,255,255,.85)";
+    ctx.font = "700 14px system-ui";
+    ctx.textAlign = "center";
+    ctx.fillText("Fatimə", x, y + 95);
+
+    ctx.restore();
+  }
+
+  function calcLevelFromScore(s){
+    return 1 + Math.floor(s / 20);
+  }
+
+  function spawnItem(){
+    const r = rand(14, 24);
+    const bombChance = Math.min(0.33, 0.12 + level * 0.02);
+    const greenChance = 0.06;
+    const goldChance  = 0.10;
+
+    const roll = Math.random();
+    let kind = "heart";
+    if (roll < bombChance) kind = "bomb";
+    else if (roll < bombChance + greenChance) kind = "green";
+    else if (roll < bombChance + greenChance + goldChance) kind = "gold";
+
+    const baseSpeed = rand(115, 175) + (level - 1) * 18;
+
+    items.push({
+      kind,
+      x: rand(r, innerWidth - r),
+      y: -r,
+      r,
+      vy: baseSpeed + (kind === 'bomb' ? 25 : 0),
+      vx: rand(-20, 20)
+    });
+  }
+
+  // Input
+  function setTargetFromClientX(clientX){
+    const rect = canvas.getBoundingClientRect();
+    const x = clientX - rect.left;
+    fatime.targetX = clamp(x, fatime.r + 10, innerWidth - fatime.r - 10);
+  }
+
+  canvas.addEventListener('touchstart', e => {
+    if (e.touches[0]) setTargetFromClientX(e.touches[0].clientX);
+    // audio permission helper (optional)
+    if (audioCtx && audioCtx.state !== 'running') audioCtx.resume().catch(()=>{});
+  }, {passive:true});
+  canvas.addEventListener('touchmove', e => {
+    if (e.touches[0]) setTargetFromClientX(e.touches[0].clientX);
+  }, {passive:true});
+  canvas.addEventListener('mousedown', e => setTargetFromClientX(e.clientX));
+  canvas.addEventListener('mousemove', e => { if (e.buttons) setTargetFromClientX(e.clientX); });
+
+  // UI actions
+  restartBtn.addEventListener('click', () => {
+    items = [];
+    particles = [];
+    score = 0; lives = 5; level = 1; gameOver = false;
+    scoreEl.textContent = score;
+    livesEl.textContent = lives;
+    levelEl.textContent = level;
+    fatime.x = innerWidth/2;
+    fatime.targetX = fatime.x;
+  });
+
+  // Main loop
+  let last = performance.now();
+  let spawnAcc = 0;
+
+  function drawGameOver(){
+    ctx.save();
+    ctx.fillStyle = "rgba(0,0,0,.55)";
+    ctx.fillRect(0,0,innerWidth,innerHeight);
+
+    ctx.fillStyle = "rgba(255,255,255,.96)";
+    ctx.font = "800 30px system-ui";
+    ctx.textAlign = "center";
+    ctx.fillText("Aferin Fatimə!", innerWidth/2, innerHeight/2 - 40);
+
+    ctx.font = "600 18px system-ui";
+    ctx.fillStyle = "rgba(255,255,255,.85)";
+    ctx.fillText("Ata səninlə fəxr edir 💛", innerWidth/2, innerHeight/2 - 10);
+
+    ctx.font = "14px system-ui";
+    ctx.fillStyle = "rgba(255,255,255,.75)";
+    ctx.fillText(`Xal: ${score}   •   Level: ${level}`, innerWidth/2, innerHeight/2 + 20);
+    ctx.fillText("↻ Yenidən düyməsinə bas", innerWidth/2, innerHeight/2 + 48);
+    ctx.restore();
+  }
+
+  function loop(now){
+    const dt = Math.min(0.033, (now - last)/1000);
+    last = now;
+
+    ctx.clearRect(0,0,innerWidth,innerHeight);
+
+    if (!gameOver){
+      // spawn frequency by level
+      const spawnsPerSec = 1.6 + (level - 1) * 0.25;
+      spawnAcc += dt * spawnsPerSec;
+      while (spawnAcc >= 1){
+        spawnItem();
+        spawnAcc -= 1;
+      }
+
+      // update items
+      for (let i = items.length - 1; i >= 0; i--){
+        const it = items[i];
+        it.y += it.vy * dt;
+        it.x += it.vx * dt;
+
+        // draw
+        if (it.kind === "bomb"){
+          drawBomb(it.x, it.y, it.r);
+        } else if (it.kind === "gold"){
+          drawHeart(it.x, it.y, it.r, "rgba(255,206,71,.95)");
+        } else if (it.kind === "green"){
+          drawHeart(it.x, it.y, it.r, "rgba(80,255,160,.95)");
+        } else {
+          drawHeart(it.x, it.y, it.r, "rgba(255,105,180,.95)");
+        }
+
+        // collision (circle-circle)
+        const dx = it.x - fatime.x;
+        const dy = it.y - fatime.y;
+        const hit = Math.hypot(dx, dy) < (it.r + fatime.r - 6);
+
+        if (hit){
+          items.splice(i, 1);
+
+          if (it.kind === "bomb"){
+            lives = Math.max(0, lives - 1);
+            livesEl.textContent = lives;
+            burst(it.x, it.y, "rgba(255,80,80,.75)");
+            beep(180,0.14,'square',0.03);
+            if (lives <= 0) gameOver = true;
+          } else if (it.kind === "green"){
+            const before = lives;
+            lives = Math.min(MAX_LIVES, lives + 1);
+            livesEl.textContent = lives;
+            burst(it.x, it.y, "rgba(80,255,160,.75)");
+            beep(600,0.08,'triangle',0.03);
+            if (lives > before) sayRus();
+          } else if (it.kind === "gold"){
+            score += 3;
+            scoreEl.textContent = score;
+            burst(it.x, it.y, "rgba(255,206,71,.95)");
+            beep(900,0.08,'sine',0.03);
+          } else {
+            score += 1;
+            scoreEl.textContent = score;
+            burst(it.x, it.y, "rgba(255,105,180,.95)");
+            beep(750,0.06,'triangle',0.03);
+          }
+
+          const newLevel = calcLevelFromScore(score);
+          if (newLevel !== level){
+            level = newLevel;
+            levelEl.textContent = level;
+            burst(innerWidth/2, innerHeight/2, "rgba(255,255,255,.55)");
+            beep(988,0.10,'sine',0.02);
+          }
+          continue;
+        }
+
+        // missed: remove only (NO life loss)
+        if (it.y - it.r > innerHeight + 20){
+          items.splice(i, 1);
+        }
+      }
+
+      drawParticles(dt);
+      drawFatime();
+    } else {
+      drawParticles(dt);
+      drawFatime();
+      drawGameOver();
+    }
+
+    requestAnimationFrame(loop);
+  }
+
+  // init HUD
+  scoreEl.textContent = score;
+  livesEl.textContent = lives;
+  levelEl.textContent = level;
+
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
