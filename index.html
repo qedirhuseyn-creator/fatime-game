@@ -1,76 +1,192 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="az">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Fatimə – Rəqəmlər</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Uşaq Oyunu (Demo)</title>
 
   <style>
-    body {
-      margin: 0;
-      font-family: system-ui, sans-serif;
-      background: linear-gradient(180deg,#0f1e3d,#081225);
-      color: #fff;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
+    :root{
+      --bg1:#0f1e3d;
+      --bg2:#081225;
+      --card:rgba(255,255,255,.08);
+      --card2:rgba(0,0,0,.18);
+      --btn:rgba(255,255,255,.14);
+      --btn2:rgba(255,255,255,.26);
+      --text:#fff;
+      --muted:rgba(255,255,255,.75);
+      --radius:18px;
     }
+    html,body{height:100%; margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; color:var(--text);}
+    body{background:linear-gradient(180deg,var(--bg1),var(--bg2)); display:flex; align-items:center; justify-content:center;}
+    .wrap{width:min(520px,92vw);}
 
-    .app {
-      width: 90%;
-      max-width: 400px;
-      background: rgba(255,255,255,0.08);
-      border-radius: 18px;
-      padding: 20px;
-      box-shadow: 0 20px 40px rgba(0,0,0,.4);
-      text-align: center;
-    }
+    .topbar{display:flex; gap:10px; justify-content:space-between; align-items:center; margin-bottom:12px;}
+    .pill{display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:999px; background:rgba(255,255,255,.10); font-size:14px; color:var(--muted);}
+    .pill strong{color:#fff;}
+    .btnpill{cursor:pointer; user-select:none}
+    .btnpill:active{transform:scale(.98)}
 
-    .top {
-      display: flex;
-      justify-content: space-between;
-      font-size: 14px;
-      margin-bottom: 20px;
-      opacity: .9;
+    .card{
+      background:var(--card);
+      border-radius:var(--radius);
+      box-shadow:0 18px 40px rgba(0,0,0,.35);
+      overflow:hidden;
     }
+    .cardInner{padding:18px;}
+    h1{margin:8px 0 6px; font-size:26px;}
+    p{margin:0 0 14px; color:var(--muted); line-height:1.35;}
+    .line{height:1px; background:rgba(255,255,255,.10); margin:14px 0;}
 
-    #question {
-      font-size: 64px;
-      margin: 20px 0;
-      font-weight: bold;
+    .avatarWrap{display:flex; justify-content:center; margin:14px 0;}
+    .avatar{
+      width:160px; height:160px; border-radius:999px;
+      background:rgba(255,255,255,.10);
+      border:4px solid rgba(255,255,255,.18);
+      display:flex; align-items:center; justify-content:center;
+      overflow:hidden;
+      position:relative;
     }
+    .avatar img{width:100%; height:100%; object-fit:cover; display:block;}
+    .avatar .ph{color:rgba(255,255,255,.55); font-size:13px; padding:10px; text-align:center;}
 
-    .option {
-      width: 100%;
-      padding: 16px;
-      margin: 10px 0;
-      font-size: 20px;
-      border-radius: 12px;
-      border: none;
-      background: rgba(255,255,255,.15);
-      color: #fff;
-      cursor: pointer;
+    .input{
+      width:100%;
+      padding:14px 14px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(0,0,0,.14);
+      color:#fff;
+      outline:none;
+      font-size:16px;
+      box-sizing:border-box;
+      text-align:center;
     }
+    .input::placeholder{color:rgba(255,255,255,.55)}
 
-    .option:active {
-      background: rgba(255,255,255,.3);
+    .btn{
+      width:100%;
+      padding:14px 14px;
+      border-radius:14px;
+      border:none;
+      background:var(--btn);
+      color:#fff;
+      font-size:18px;
+      cursor:pointer;
     }
+    .btn:active{background:var(--btn2); transform:scale(.99)}
+    .btnSecondary{background:rgba(255,255,255,.10)}
+    .btnDanger{background:rgba(255, 70, 70, .18)}
+
+    /* GAME */
+    .gameCard{
+      background:var(--card2);
+      border-radius:var(--radius);
+      padding:18px;
+      margin-top:10px;
+    }
+    .questionLabel{font-size:16px; color:var(--muted); margin-top:4px;}
+    #questionValue{font-size:80px; font-weight:800; margin:10px 0 10px;}
+    .options{display:flex; flex-direction:column; gap:10px;}
+    .optBtn{
+      width:100%;
+      padding:18px;
+      border-radius:14px;
+      border:none;
+      background:rgba(255,255,255,.14);
+      color:#fff;
+      font-size:22px;
+      cursor:pointer;
+    }
+    .optBtn:active{background:rgba(255,255,255,.26); transform:scale(.99)}
+    .hint{margin-top:12px; min-height:20px; color:var(--muted); text-align:center;}
+
+    /* hide/show screens */
+    .hidden{display:none !important;}
+
+    /* file input look */
+    .fileRow{display:flex; gap:10px; align-items:center; justify-content:center; flex-wrap:wrap;}
+    .fileBtn{
+      display:inline-flex; align-items:center; justify-content:center;
+      padding:12px 14px; border-radius:14px;
+      background:rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.14);
+      color:#fff; cursor:pointer; user-select:none;
+      font-size:14px;
+    }
+    .fileBtn:active{background:rgba(255,255,255,.18)}
+    input[type="file"]{display:none;}
   </style>
 </head>
 
 <body>
-  <div class="app">
-    <div class="top">
-      <div>🎮 Rəqəmlər (demo)</div>
-      <div>Xal: <b id="score">0</b></div>
+  <div class="wrap">
+
+    <!-- TOP BAR -->
+    <div class="topbar">
+      <div class="pill"><span>🎮</span> <strong id="modePill">Oyun (demo)</strong></div>
+
+      <div style="display:flex; gap:10px;">
+        <div class="pill btnpill" id="langBtn">AZ</div>
+        <div class="pill btnpill" id="backBtn" style="display:none;">⬅ Geri</div>
+      </div>
     </div>
 
-    <div id="question">?</div>
+    <!-- LOGIN SCREEN -->
+    <div class="card" id="screenLogin">
+      <div class="cardInner">
+        <h1 id="loginTitle">Salam!</h1>
+        <p id="loginText">Uşağın adını yaz və şəkil yüklə. Şəkil dairəvi avatar kimi görünəcək.</p>
 
-    <div id="options"></div>
+        <div class="line"></div>
+
+        <div class="avatarWrap">
+          <div class="avatar" id="avatarBox">
+            <div class="ph" id="avatarPlaceholder">Şəkil yüklənməyib</div>
+            <img id="avatarImg" alt="avatar" class="hidden" />
+          </div>
+        </div>
+
+        <div class="fileRow">
+          <label class="fileBtn" for="avatarInput">📷 Şəkil yüklə</label>
+          <input id="avatarInput" type="file" accept="image/*" />
+          <button class="fileBtn" id="clearAvatarBtn" type="button">🧹 Avatarı sil</button>
+        </div>
+
+        <div class="line"></div>
+
+        <input class="input" id="nameInput" placeholder="Uşağın adı (məs: Aytac)" maxlength="20" />
+
+        <button class="btn" id="startBtn" style="margin-top:12px;">Başla</button>
+        <button class="btn btnSecondary" id="resetAllBtn" style="margin-top:10px;">Yaddaşı sıfırla</button>
+
+        <p style="margin-top:12px; font-size:12px; opacity:.8;">
+          Qeyd: məlumatlar telefonda saxlanır (localStorage).
+        </p>
+      </div>
+    </div>
+
+    <!-- GAME SCREEN -->
+    <div class="card hidden" id="screenGame">
+      <div class="cardInner">
+        <div style="display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap;">
+          <div class="pill">👤 <strong id="playerName">Uşaq</strong></div>
+          <div class="pill">Xal: <strong id="score">0</strong></div>
+        </div>
+
+        <div class="gameCard">
+          <div class="questionLabel" id="questionLabel">Bu neçədir?</div>
+          <div id="questionValue">—</div>
+          <div class="options" id="options"></div>
+          <div class="hint" id="hint"></div>
+        </div>
+
+        <button class="btn btnSecondary" id="restartBtn" style="margin-top:12px;">Yenidən başla</button>
+      </div>
+    </div>
+
   </div>
 
-  <script src="js/game.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>
