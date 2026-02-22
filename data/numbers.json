@@ -1,1 +1,42 @@
-{"id":10,"question":"Bu neçədir?","value":10,"options":[8,9,10],"correct":10,"voice":"Bu ondur"}
+[
+  {
+    "id": 1,
+    "question": "Bu neçədir?",
+    "value": 1,
+    "options": [1, 2, 3],
+    "correct": 1,
+    "voice": "Это один"
+  },
+  {
+    "id": 2,
+    "question": "Bu neçədir?",
+    "value": 2,
+    "options": [1, 2, 3],
+    "correct": 2,
+    "voice": "Это два"
+  },
+  {
+    "id": 3,
+    "question": "Bu neçədir?",
+    "value": 3,
+    "options": [2, 3, 4],
+    "correct": 3,
+    "voice": "Это три"
+  },
+  {
+    "id": 4,
+    "question": "Bu neçədir?",
+    "value": 4,
+    "options": [3, 4, 5],
+    "correct": 4,
+    "voice": "Это четыре"
+  },
+  {
+    "id": 5,
+    "question": "Bu neçədir?",
+    "value": 5,
+    "options": [4, 5, 6],
+    "correct": 5,
+    "voice": "Это пять"
+  }
+]
