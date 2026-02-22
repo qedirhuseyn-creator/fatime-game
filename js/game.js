@@ -1,8 +1,23 @@
 let questions = [];
 let current = 0;
+let score = 0;
+let soundOn = true;
 
-// SƏS FUNKSİYASI
+const $q = document.getElementById("question");
+const $v = document.getElementById("value");
+const $score = document.getElementById("score");
+const $hint = document.getElementById("hint");
+const $soundBtn = document.getElementById("soundBtn");
+const $soundState = document.getElementById("soundState");
+const $restartBtn = document.getElementById("restartBtn");
+
+function setHint(text, cls = "") {
+  $hint.className = `hint ${cls}`.trim();
+  $hint.textContent = text || "";
+}
+
 function speak(text) {
+  if (!soundOn) return;
   if (!("speechSynthesis" in window)) return;
   const u = new SpeechSynthesisUtterance(text);
   u.lang = "az-AZ";
@@ -10,42 +25,82 @@ function speak(text) {
   window.speechSynthesis.speak(u);
 }
 
-// RƏQƏMLƏRİ YÜKLƏ
-fetch("data/numbers.json")
-  .then(res => res.json())
-  .then(data => {
-    questions = data;
-    current = 0;
-    showQuestion();
-  });
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
 
-// SUALI GÖSTƏR
-function showQuestion() {
-  const q = questions[current];
-  document.getElementById("question").innerText = q.question;
-  document.getElementById("value").innerText = q.value;
+function render() {
+  const item = questions[current];
+  $q.textContent = item.question;
+  $v.textContent = item.value;
 
-  const buttons = document.querySelectorAll(".option");
-  buttons.forEach((btn, i) => {
-    btn.innerText = q.options[i];
-    btn.onclick = () => checkAnswer(q.options[i], q);
+  const btns = document.querySelectorAll(".option");
+  btns.forEach((btn, i) => {
+    btn.textContent = item.options[i];
+    btn.onclick = () => check(Number(item.options[i]), item);
   });
 }
 
-// CAVABI YOXLA
-function checkAnswer(answer, q) {
-  if (answer === q.correct) {
-    speak(q.voice);
-    current++;
-    if (current < questions.length) {
-      setTimeout(showQuestion, 600);
-    } else {
-      speak("Əla! Rəqəmləri öyrəndin");
-      alert("Əla! Rəqəmləri öyrəndin 🌟");
-      current = 0;
-      showQuestion();
-    }
+function next() {
+  current++;
+  if (current >= questions.length) {
+    speak("Əla! Rəqəmləri öyrəndin");
+    alert("Əla! Rəqəmləri öyrəndin 🌟");
+    start(); // yenidən başlasın
+    return;
+  }
+  render();
+}
+
+function check(ans, item) {
+  if (ans === item.correct) {
+    score++;
+    $score.textContent = String(score);
+    speak(item.voice);
+    setHint("Aferin, Fatimə! 👏", "ok");
+    setTimeout(() => {
+      setHint("");
+      next();
+    }, 550);
   } else {
+    setHint("Yenə cəhd edək 🙂", "bad");
     speak("Bir də baxaq");
   }
-    }
+}
+
+function start() {
+  current = 0;
+  score = 0;
+  $score.textContent = "0";
+  setHint("");
+  // sualları qarışdıraq
+  questions = shuffle([...questions]);
+  render();
+}
+
+$soundBtn?.addEventListener("click", () => {
+  soundOn = !soundOn;
+  $soundState.textContent = soundOn ? "Aç" : "Söndür";
+  setHint(soundOn ? "Səs açıldı" : "Səs söndü");
+  if (soundOn) speak("Aferin, Fatimə");
+});
+
+$restartBtn?.addEventListener("click", () => {
+  start();
+});
+
+fetch("data/numbers.json")
+  .then(r => r.json())
+  .then(data => {
+    questions = data;
+    start();
+  })
+  .catch(() => {
+    $q.textContent = "Yükləmə xətası";
+    $v.textContent = "—";
+    setHint("numbers.json tapılmadı. data/numbers.json var mı?");
+  });
